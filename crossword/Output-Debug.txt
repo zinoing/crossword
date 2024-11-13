@@ -1,0 +1,12 @@
+'crossword.exe' (Win32): Loaded 'C:\Users\zino\Desktop\crossword\x64\Debug\crossword.exe'. Symbols loaded.
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\ntdll.dll'. 
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\kernel32.dll'. 
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\KernelBase.dll'. 
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\vcruntime140d.dll'. 
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\ucrtbased.dll'. 
+The thread 24588 has exited with code 0 (0x0).
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\kernel.appcore.dll'. 
+'crossword.exe' (Win32): Loaded 'C:\Windows\System32\msvcrt.dll'. 
+The thread 10792 has exited with code 0 (0x0).
+The thread 4664 has exited with code 0 (0x0).
+The program '[8980] crossword.exe' has exited with code 0 (0x0).
