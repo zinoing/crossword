@@ -1,4 +1,4 @@
-Across:
+Cross:
 
 2. The country where you can see pyramids. (5 letters)
 4. The country with Toronto, Montreal, and Ottawa. (6 letters)
@@ -6,7 +6,6 @@ Across:
 10. The country where Pushkin, Tolstoy, and Dostoevsky were born. (6 letters)
 12. The country with the Taj Mahal. (5 letters)
 14. The language spoken in Bonn. (8 letters)
-15. The country where George Washington was the first president. (3 letters)
 16. The country famous for St. Patrick. (7 letters)
 
 Down:
@@ -19,3 +18,4 @@ Down:
 9. The language spoken in the Middle East. (6 letters)
 11. The language spoken in Spain, Mexico, and Argentina. (7 letters)
 13. The country where Napoleon was born. (6 letters)
+15. The country where George Washington was the first president. (3 letters)

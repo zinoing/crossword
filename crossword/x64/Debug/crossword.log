@@ -1,3 +1,4 @@
 ﻿  crossword.c
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(31,1): warning C4172: returning address of local variable or temporary : temp
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(236,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(435,83): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
   crossword.vcxproj -> C:\Users\zino\Desktop\crossword\x64\Debug\crossword.exe
