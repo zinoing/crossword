@@ -17,8 +17,15 @@
 #define MAX_DESCRIPTION_LENGTH 1000
 #define NUM_OF_WORDS 16
 
-#define CROSS 0
+#define ACROSS 0
 #define DOWN 1
+
+#define MAP_CNT 3
+#define MAX_DIR_LENGTH 100
+#define Animals "..\\crosswords\\Animals\\"
+#define CountriesNLanguages "..\\crosswords\\Countries&Languages\\"
+#define Jobs "..\\crosswords\\Jobs\\"
+
 
 void gotoxy(int x, int y) {
     COORD pos = { x, y };
@@ -73,7 +80,7 @@ void showIntro(int* gameMode) {
 // initialize functions
 void initializeDirections(char* directions) {
     for (int i = 1; i <= NUM_OF_WORDS; ++i) {
-        if (i % 2 == 0) directions[i] = CROSS;
+        if (i % 2 == 0) directions[i] = ACROSS;
         else directions[i] = DOWN;
     }
 }
@@ -88,9 +95,12 @@ void initializeSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LI
 }
 
 // load funtcions
-void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH][MAX_LINE_WIDTH]) {
+void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH][MAX_LINE_WIDTH], const char* mapDir) {
     FILE* fs;
-    fs = fopen("..\\crosswords\\Countries&Languages\\map.txt", "r");
+
+    const char fullPath[MAX_DIR_LENGTH];
+    snprintf(fullPath, sizeof(fullPath), "%smap.txt", mapDir);
+    fs = fopen(fullPath, "r");
 
     if (fs == NULL) {
         printf("Failed to read map file\n");
@@ -112,13 +122,16 @@ void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH
     fclose(fs);
 }
 
-void loadDescription(char description[MAX_DESCRIPTION_LENGTH]) {
+void loadDescription(char description[MAX_DESCRIPTION_LENGTH], const char* mapDir) {
 
     FILE* fs;
-    fs = fopen("..\\crosswords\\Countries&Languages\\description_eng.txt", "r");
+
+    const char fullPath[MAX_DIR_LENGTH];
+    snprintf(fullPath, sizeof(fullPath), "%sdescription_eng.txt", mapDir);
+    fs = fopen(fullPath, "r");
 
     if (fs == NULL) {
-        printf("Failed to read map file\n");
+        printf("Failed to read description file\n");
         return;
     }
 
@@ -133,9 +146,12 @@ void loadDescription(char description[MAX_DESCRIPTION_LENGTH]) {
     fclose(fs);
 }
 
-void loadAnswers(char answers[NUM_OF_WORDS + 1][15]) {
+void loadAnswers(char answers[NUM_OF_WORDS + 1][15], const char* mapDir) {
     FILE* fs;
-    fs = fopen("..\\crosswords\\Countries&Languages\\answer.txt", "r");
+
+    const char fullPath[MAX_DIR_LENGTH];
+    snprintf(fullPath, sizeof(fullPath), "%sanswer.txt", mapDir);
+    fs = fopen(fullPath, "r");
 
     if (fs == NULL) {
         printf("Failed to read map file\n");
@@ -221,7 +237,8 @@ void displayMenu() {
         "1. 단어 입력\n"
         "2. 단어 삭제\n"
         "3. 전체 삭제\n"
-        "4. 맵 보기\n\n"
+        "4. 맵 보기\n"
+        "5. 힌트 보기\n\n"
         "--------------");
 }
 
@@ -250,13 +267,14 @@ void writeWordOnSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 dir = directions[lineNum];
                 startY = i;
                 startX = j;
+                break;
             }
         }
 
         if (dir != -1) break;
     }
 
-    if (dir == CROSS) {
+    if (dir == ACROSS) {
         int idx = startX;
 
         for (int i = 0; i < lengthOfWord; ++i) {
@@ -319,6 +337,110 @@ void writeWordOnSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
     }
 }
 
+// write hint function
+void writeHintOnSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
+    char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
+    char answers[NUM_OF_WORDS + 1][15],
+    char directions[NUM_OF_WORDS + 1],
+    bool hintUsedLines[NUM_OF_WORDS],
+    int lineNum
+) {
+
+
+    srand((unsigned int)time(NULL));
+
+    int lengthOfWord = strlen(answers[lineNum]);
+    int dir = -1;
+    int startY, startX;
+
+    bool two_digit = ((lineNum / 10) > 0) ? true : false;
+
+    if (hintUsedLines[lineNum] == true)
+    {
+        printf("이미 힌트를 사용한 문제입니다.");
+        Sleep(2000);
+    }
+    else {
+        hintUsedLines[lineNum] = true;
+        for (int i = 0; i < lengthOfWord; i++) {
+            if (rand() % 2 == 0) {
+                char hint = answers[lineNum][i];
+
+                for (int i = 0; i < MAX_MAP_HEIGHT; ++i) {
+                    for (int j = 0; j < MAX_LINE_WIDTH; ++j) {
+                        // 단어 번호를 찾았다면
+                        if (two_digit && map[i][j - 1] == (char)(lineNum / 10 + '0') && map[i][j] == (char)(lineNum % 10 + '0') ||
+                            !two_digit && map[i][j] == (char)(lineNum + '0')) {
+
+                            dir = directions[lineNum];
+                            startY = i;
+                            startX = j;
+                            break;
+                        }
+                    }
+
+                    if (dir != -1) break;
+                }
+
+                if (dir == ACROSS) {
+                    int idx = startX + i * 4;
+
+                    // 추가하고자 하려는 칸에 숫자가 있을 경우
+                    if (sheet[startY][idx] >= '0' && sheet[startY][idx] <= '9') {
+
+                        if (i == 0) {
+                            sheet[startY][idx - 1] = ' ';
+                            sheet[startY][idx] = hint;
+                            sheet[startY][idx + 1] = ' ';
+                            idx += 4;
+                            continue;
+                        }
+
+                        // 두 자리 숫자의 경우
+                        if (i != 0 && two_digit) {
+                            sheet[startY][idx + 1] = hint;
+                        }
+                        else {
+                            sheet[startY][idx + 1] = hint;
+                        }
+                    }
+                    else {
+                        sheet[startY][idx] = hint;
+                    }
+                }
+
+                if (dir == DOWN) {
+                    int idx = startY + i * 2;
+
+                    // 추가하고자 하려는 칸에 숫자가 있을 경우
+                    if (sheet[idx][startX] >= '0' && sheet[idx][startX] <= '9') {
+
+                        if (i == 0) {
+                            sheet[idx][startX - 1] = ' ';
+                            sheet[idx][startX] = hint;
+                            sheet[idx][startX + 1] = ' ';
+                            idx += 2;
+                            continue;
+                        }
+
+                        // 두 자리 숫자의 경우
+                        if (i != 0 && two_digit) {
+                            sheet[idx][startX + 1] = hint;
+                        }
+                        else {
+                            sheet[idx][startX + 1] = hint;
+                        }
+                    }
+                    else {
+                        sheet[idx][startX] = hint;
+                    }
+                }
+            }
+        }
+    }
+    return;
+}
+
 // delete word function
 void deleteWordFromSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], 
                          char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], 
@@ -348,7 +470,7 @@ void deleteWordFromSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
         if (dir != -1) break;
     }
 
-    if (dir == CROSS) {
+    if (dir == ACROSS) {
         int idx = startX - 1;
 
         for (int i = idx; i < idx + 4*lengthOfWord; ++i) {
@@ -383,12 +505,13 @@ bool checkCorrect(char answers[NUM_OF_WORDS + 1][15], char inputWords[NUM_OF_WOR
     return true;
 }
 
-void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], 
-            char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], 
-            char description[MAX_DESCRIPTION_LENGTH], 
-            char answers[NUM_OF_WORDS + 1][15], 
+void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
+            char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
+            char description[MAX_DESCRIPTION_LENGTH],
+            char answers[NUM_OF_WORDS + 1][15],
             char inputWords[NUM_OF_WORDS + 1][15],
             char directions[NUM_OF_WORDS + 1],
+            bool hintUsedLines[NUM_OF_WORDS],
             int gameMode) {
     while (1) {
         system("cls"); // clear display
@@ -450,14 +573,28 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             }
             toggle = !toggle;
             break;
+        case 5:
+            printf("5번 선택됨: 힌트\n");
+            int hintNum = 0;
+            printf("입력하고자 하는 라인의 번호를 누르세요: ");
+            scanf("%d", &hintNum);
+            lineNum = hintNum;
+            if (lineNum < 1 || lineNum > NUM_OF_WORDS) {
+                printf("1에서 16중의 숫자 중에 하나를 고르세요\n");
+                Sleep(2000);
+            }
+            else {
+                writeHintOnSheet(map, sheet, answers, directions, hintUsedLines, lineNum);
+            }
+            break;
         default:
             printf("보기에 선택된 번호만을 골라주세요.");
             Sleep(1000);
             break;
         }
 
-        //if (checkCorrect(answers, inputWords)) {
-        if (true) {
+        if (checkCorrect(answers, inputWords)) {
+        //if (true) {
             printf("축하합니다 모든 단어를 다 맞추셨습니다.\n"
                     "5초 뒤에 로비로 돌아가게 됩니다.\n");
             Sleep(5000);
@@ -485,6 +622,9 @@ int main() {
         char answers[NUM_OF_WORDS + 1][15];
         char inputWords[NUM_OF_WORDS + 1][15];
 
+        bool hintUsedLines[NUM_OF_WORDS];
+        memset(hintUsedLines, 0, NUM_OF_WORDS);
+
         char directions[NUM_OF_WORDS + 1];
         memset(directions, 0, 16);
 
@@ -499,17 +639,22 @@ int main() {
 
         // map을 랜덤히 뽑는 알고리즘 필요 <- 토요일까지 구현
 
+        const char* maps[MAP_CNT] = {Animals, CountriesNLanguages, Jobs};
+        int mapIdx = rand() % MAP_CNT;
+        mapIdx = 2; // 임시로 작성
+        const char* dir = maps[mapIdx];
+
         // load
-        loadMap(map, sheet);
-        loadDescription(description);
-        loadAnswers(answers);
+        loadMap(map, sheet, dir);
+        loadDescription(description, dir);
+        loadAnswers(answers, dir);
 
         // initialize
         initializeDirections(directions);
         initializeSheet(map, sheet);
 
         // update
-        update(map, sheet, description, answers, inputWords, directions, gameMode);
+        update(map, sheet, description, answers, inputWords, directions, hintUsedLines, gameMode);
     }
     
     return 0;
