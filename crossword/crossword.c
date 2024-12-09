@@ -1,5 +1,6 @@
 ﻿// crossword.c : This file contains the 'main' function. Program execution begins and ends there.
 //
+
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
@@ -7,10 +8,12 @@
 #include <windows.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <process.h>
 
 #define EXIT 0
 #define GAME_MODE_NORMAL 1
 #define GAME_MODE_TIME_ATTACK 2
+#define MAX_TIME_LIMIT 180
 
 #define MAX_MAP_HEIGHT 31
 #define MAX_LINE_WIDTH 62
@@ -20,12 +23,18 @@
 #define ACROSS 0
 #define DOWN 1
 
-#define MAP_CNT 3
+#define MAP_CNT 4
 #define MAX_DIR_LENGTH 100
+
 #define Animals "..\\crosswords\\Animals\\"
 #define CountriesNLanguages "..\\crosswords\\Countries&Languages\\"
 #define Jobs "..\\crosswords\\Jobs\\"
+#define Capitals "..\\crosswords\\Capitals\\"
 
+typedef struct ScoreTimeRecord {
+    int time;
+    int score;
+} ScoreTimeRecord;
 
 void gotoxy(int x, int y) {
     COORD pos = { x, y };
@@ -94,6 +103,20 @@ void initializeSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LI
     return;
 }
 
+void initializeScoreTimeRecord(ScoreTimeRecord* scoreTimeRecord) {
+    scoreTimeRecord->score = 0;
+    scoreTimeRecord->time = MAX_TIME_LIMIT;
+    return;
+}
+
+// select map
+void selectMap(const char* mapDirs[], char* mapDir[]) {
+    int mapIdx = rand() % MAP_CNT;
+    mapIdx = 3; // 임시로 작성
+    *mapDir = mapDirs[mapIdx];
+    return;
+}
+
 // load funtcions
 void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH][MAX_LINE_WIDTH], const char* mapDir) {
     FILE* fs;
@@ -146,7 +169,7 @@ void loadDescription(char description[MAX_DESCRIPTION_LENGTH], const char* mapDi
     fclose(fs);
 }
 
-void loadAnswers(char answers[NUM_OF_WORDS + 1][15], const char* mapDir) {
+void loadAnswers(char answers[NUM_OF_WORDS + 1][15], char* mapDir) {
     FILE* fs;
 
     const char fullPath[MAX_DIR_LENGTH];
@@ -193,11 +216,11 @@ void displayMap(int gameMode, char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH]) {
 void displaySheet(int gameMode, char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH]) {
     gotoxy(0, 0);
 
-    if (gameMode == 1) {
-        printf("input sheet  \n");
+    if (gameMode == GAME_MODE_NORMAL) {
+        printf("normal mode\n");
     }
-    else {
-        printf("normal crossword puzzle\n");
+    else if (gameMode == GAME_MODE_TIME_ATTACK) {
+        printf("time attack mode\n");
     }
 
     for (int i = 0; i < MAX_MAP_HEIGHT; ++i) {
@@ -240,6 +263,27 @@ void displayMenu() {
         "4. 맵 보기\n"
         "5. 힌트 보기\n\n"
         "--------------");
+}
+
+void displayTime(int time) {
+    // 시간 출력
+    gotoxy(90, 0);
+    printf("time left: %d", time);
+}
+
+void displayScore(int score) {
+    // 점수 출력
+    gotoxy(110, 0);
+    printf("score: %d", score);
+}
+
+void displayMessage(const char* message) {
+    gotoxy(0, 43);
+    printf("                                                                                      \r");
+    //gotoxy(0, 43);
+    printf("%s\n", message);
+    Sleep(1000);
+    return;
 }
 
 // write word function
@@ -489,13 +533,42 @@ void deleteWordFromSheet(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
     }
 }
 
-int getInput() {
-    gotoxy(0, 43);
-    printf("메뉴 중 하나를 선택하세요.\n");
+
+void clearInputBuffer() {
+    while (getchar() != '\n');  // 입력 버퍼를 비운다.
+}
+
+int getInputNumber() {
+    gotoxy(0, 44);
 
     int selectedOption = 0;
     scanf("%d", &selectedOption);
+
+    gotoxy(0, 44);
+    printf("                                                                                      ");
+
     return selectedOption;
+}
+
+void getInputString(char* inputStr) {
+    clearInputBuffer();
+
+    gotoxy(0, 44);
+
+    char input[100];
+
+    fgets(input, 100, stdin);
+
+    size_t len = strlen(input);
+    if (len > 0 && input[len - 1] == '\n') {
+        input[len - 1] = '\0';
+    }
+
+    gotoxy(0, 44);
+    printf("                                                                                      ");
+
+    strcpy(inputStr, input);
+    return;
 }
 
 bool checkCorrect(char answers[NUM_OF_WORDS + 1][15], char inputWords[NUM_OF_WORDS + 1][15]) {
@@ -505,6 +578,22 @@ bool checkCorrect(char answers[NUM_OF_WORDS + 1][15], char inputWords[NUM_OF_WOR
     return true;
 }
 
+unsigned __stdcall timerThread(ScoreTimeRecord* scoreTimeRecord) {
+
+    while (scoreTimeRecord->time > 0) {
+        Sleep(1000);  // 1초 대기
+        scoreTimeRecord->time--;  // 1초 감소
+
+        // 콘솔에 현재 시간과 점수를 출력
+        displayTime(scoreTimeRecord->time);
+        displayScore(scoreTimeRecord->score);
+
+        gotoxy(0, 44); // 이전 커서 위치로 되돌림
+    }
+
+    return 0;
+}
+
 void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             char sheet[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             char description[MAX_DESCRIPTION_LENGTH],
@@ -512,7 +601,21 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             char inputWords[NUM_OF_WORDS + 1][15],
             char directions[NUM_OF_WORDS + 1],
             bool hintUsedLines[NUM_OF_WORDS],
-            int gameMode) {
+            int gameMode,
+            ScoreTimeRecord scoreTimeRecord) {
+
+    if (gameMode == GAME_MODE_TIME_ATTACK) {
+
+        uintptr_t threadHandle = _beginthreadex(
+            NULL,
+            0,
+            timerThread,
+            &scoreTimeRecord,
+            0,
+            NULL
+        );
+    }
+
     while (1) {
         system("cls"); // clear display
 
@@ -521,87 +624,180 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
         displayDescription(description);
         displayMenu();
 
-        // get input
-        int selectedOption = getInput();
-        int toggle = 1; // 상태 토글용 변수
+        if (gameMode == GAME_MODE_NORMAL) {
+            // get input
+            displayMessage("메뉴 중 하나를 선택하세요.");
+            int selectedOption = getInputNumber();
+            int toggle = 1; // 상태 토글용 변수
 
-        switch (selectedOption) {
-        case 1:
-            printf("1번 선택됨: 단어 입력\n");
-            int lineNum = 0;
-            char inputStr[100] = { 0 };
-            printf("입력하고자 하는 라인의 번호를 누르세요: ");
-            scanf("%d", &lineNum);
-            if (lineNum < 1 || lineNum  > NUM_OF_WORDS) {
-                printf("1에서 16중의 숫자 중에 하나를 고르세요\n");
-                Sleep(2000);
-            }
-            else {
-                printf("입력하고자 하는 라인의 단어를 누르세요: ");
-                scanf("%s", &inputStr);
-
-                // 글자 수가 맞지 않을 경우 알림
-                if (strlen(answers[lineNum]) != strlen(inputStr)) {
-                    printf("글자 수가 올바르지 않습니다.");
-                    Sleep(1000);
+            switch (selectedOption) {
+            case 1:
+                displayMessage("1번 선택됨: 단어 입력");
+                int lineNum = 0;
+                char inputStr[100] = { 0 };
+                displayMessage("입력하고자 하는 라인의 번호를 누르세요.");
+                lineNum = getInputNumber();
+                if (lineNum < 1 || lineNum  > NUM_OF_WORDS) {
+                    displayMessage("1에서 16중의 숫자 중에 하나를 고르세요");
+                    Sleep(2000);
                 }
                 else {
-                    writeWordOnSheet(map, sheet, inputWords, directions, lineNum, toUpperCase(inputStr));
+                    displayMessage("입력하고자 하는 라인의 단어를 누르세요.");
+                    getInputString(inputStr);
+
+                    // 글자 수가 맞지 않을 경우 알림
+                    if (strlen(answers[lineNum]) != strlen(inputStr)) {
+                        displayMessage("글자 수가 올바르지 않습니다.");
+                        Sleep(1000);
+                    }
+                    else {
+                        writeWordOnSheet(map, sheet, inputWords, directions, lineNum, toUpperCase(inputStr));
+                    }
                 }
+                break;
+            case 2:
+                displayMessage("2번 선택됨: 단어 삭제");
+                int lineToDelete = 0;
+                displayMessage("삭제하고자 하는 라인의 번호를 누르세요.");
+                lineToDelete = getInputNumber();
+                deleteWordFromSheet(map, sheet, inputWords, directions, lineToDelete, strlen(answers[lineToDelete]));
+                break;
+            case 3:
+                displayMessage("3번 선택됨: 전체 삭제");
+                initializeSheet(map, sheet);
+                break;
+            case 4:
+                displayMessage("4번 선택됨: 맵 보기");
+                if (toggle) {
+                    displayMap(GAME_MODE_NORMAL, map);
+                    Sleep(2000);
+                }
+                else {
+                    displaySheet(GAME_MODE_NORMAL, sheet);
+                }
+                toggle = !toggle;
+                break;
+            case 5:
+                displayMessage("5번 선택됨: 힌트");
+                int hintNum = 0;
+                printf("입력하고자 하는 라인의 번호를 누르세요.");
+                scanf("%d", &hintNum);
+                lineNum = hintNum;
+                if (lineNum < 1 || lineNum > NUM_OF_WORDS) {
+                    printf("1에서 16중의 숫자 중에 하나를 고르세요.");
+                    Sleep(2000);
+                }
+                else {
+                    writeHintOnSheet(map, sheet, answers, directions, hintUsedLines, lineNum);
+                }
+                break;
+            default:
+                displayMessage("보기에 선택된 번호만을 골라주세요.");
+                Sleep(1000);
+                break;
             }
-            break;
-        case 2:
-            printf("2번 선택됨: 단어 삭제\n");
-            int lineToDelete = 0;
-            printf("삭제하고자 하는 라인의 번호를 누르세요: ");
-            scanf("%d", &lineToDelete);
-            deleteWordFromSheet(map, sheet, inputWords, directions, lineToDelete, strlen(answers[lineToDelete]));
-            break;
-        case 3:
-            printf("3번 선택됨: 전체 삭제\n");
-            initializeSheet(map, sheet);
-            break;
-        case 4:
-            printf("4번 선택됨: 맵 보기\n");
-            if (toggle) {
-                displayMap(GAME_MODE_NORMAL, map);
-                printf("다시 원래 sheet로 돌아가기 원한다면 4를 누르세요.\n");
-                Sleep(2000);
-            }
-            else {
-                displaySheet(GAME_MODE_NORMAL, sheet);
-            }
-            toggle = !toggle;
-            break;
-        case 5:
-            printf("5번 선택됨: 힌트\n");
-            int hintNum = 0;
-            printf("입력하고자 하는 라인의 번호를 누르세요: ");
-            scanf("%d", &hintNum);
-            lineNum = hintNum;
-            if (lineNum < 1 || lineNum > NUM_OF_WORDS) {
-                printf("1에서 16중의 숫자 중에 하나를 고르세요\n");
-                Sleep(2000);
-            }
-            else {
-                writeHintOnSheet(map, sheet, answers, directions, hintUsedLines, lineNum);
-            }
-            break;
-        default:
-            printf("보기에 선택된 번호만을 골라주세요.");
-            Sleep(1000);
-            break;
+
+            if (checkCorrect(answers, inputWords)) {
+                displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
+                    "5초 뒤에 로비로 돌아가게 됩니다.");
+                Sleep(5000);
+                return;
+            };
+
+            Sleep(1000); // delay
         }
 
-        if (checkCorrect(answers, inputWords)) {
-        //if (true) {
-            printf("축하합니다 모든 단어를 다 맞추셨습니다.\n"
-                    "5초 뒤에 로비로 돌아가게 됩니다.\n");
-            Sleep(5000);
-            return;
-        };
+        if (gameMode == GAME_MODE_TIME_ATTACK) {
+            // get input
+            displayMessage("메뉴 중 하나를 선택하세요.");
+            int selectedOption = getInputNumber();
+            int toggle = 1; // 상태 토글용 변수
 
-        Sleep(1000); // delay
+            switch (selectedOption) {
+            case 1:
+                displayMessage("1번 선택됨: 단어 입력");
+                int lineNum = 0;
+                char inputStr[100] = { 0 };
+                displayMessage("입력하고자 하는 라인의 번호를 누르세요.");
+                lineNum = getInputNumber();
+                if (lineNum < 1 || lineNum  > NUM_OF_WORDS) {
+                    displayMessage("1에서 16중의 숫자 중에 하나를 고르세요");
+                    Sleep(2000);
+                }
+                else {
+                    displayMessage("입력하고자 하는 라인의 단어를 누르세요.");
+                    getInputString(inputStr);
+
+                    // 글자 수가 맞지 않을 경우 알림
+                    if (strlen(answers[lineNum]) != strlen(inputStr)) {
+                        displayMessage("글자 수가 올바르지 않습니다.");
+                        Sleep(1000);
+                    }
+                    else {
+                        if (strcmp(answers[lineNum], inputStr) == 0) {
+                            displayMessage("단어를 맞추셨습니다. 점수 20점 획득");
+                            scoreTimeRecord.score += 20;
+                            writeWordOnSheet(map, sheet, inputWords, directions, lineNum, toUpperCase(inputStr));
+                        }
+                        else {
+                            displayMessage("단어를 틀렸습니다.");
+                        }
+                    }
+                }
+                break;
+            case 2:
+                displayMessage("2번 선택됨: 단어 삭제");
+                int lineToDelete = 0;
+                displayMessage("삭제하고자 하는 라인의 번호를 누르세요.");
+                lineToDelete = getInputNumber();
+                deleteWordFromSheet(map, sheet, inputWords, directions, lineToDelete, strlen(answers[lineToDelete]));
+                break;
+            case 3:
+                displayMessage("3번 선택됨: 전체 삭제");
+                initializeSheet(map, sheet);
+                break;
+            case 4:
+                displayMessage("4번 선택됨: 맵 보기");
+                if (toggle) {
+                    displayMap(GAME_MODE_NORMAL, map);
+                    Sleep(2000);
+                }
+                else {
+                    displaySheet(GAME_MODE_NORMAL, sheet);
+                }
+                toggle = !toggle;
+                break;
+            case 5:
+                displayMessage("5번 선택됨: 힌트");
+                int hintNum = 0;
+                printf("입력하고자 하는 라인의 번호를 누르세요.");
+                scanf("%d", &hintNum);
+                lineNum = hintNum;
+                if (lineNum < 1 || lineNum > NUM_OF_WORDS) {
+                    printf("1에서 16중의 숫자 중에 하나를 고르세요.");
+                    Sleep(2000);
+                }
+                else {
+                    writeHintOnSheet(map, sheet, answers, directions, hintUsedLines, lineNum);
+                }
+                break;
+            default:
+                displayMessage("보기에 선택된 번호만을 골라주세요.");
+                Sleep(1000);
+                break;
+            }
+
+            if (checkCorrect(answers, inputWords)) {
+                displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
+                               "5초 뒤에 로비로 돌아가게 됩니다.");
+                Sleep(5000);
+                return;
+            }
+
+            // 저장 기능 추가 필요
+
+            Sleep(1000); // delay
+        }
     }
 }
 
@@ -612,6 +808,9 @@ int main() {
     while (1) {
         // variables
         int gameMode = 0;
+
+        const char* mapDirs[MAP_CNT] = { Animals, CountriesNLanguages, Jobs, Capitals }; // 맵 경로들
+        char* mapDir = NULL;
 
         char map[MAX_LINE_WIDTH][MAX_LINE_WIDTH]; // 오리지널 맵, 수정 불가
         char sheet[MAX_LINE_WIDTH][MAX_LINE_WIDTH]; // 이용자가 문자를 입력하는 맵
@@ -628,34 +827,25 @@ int main() {
         char directions[NUM_OF_WORDS + 1];
         memset(directions, 0, 16);
 
+        ScoreTimeRecord scoreTimeRecord;
+
         showIntro(&gameMode);
-        if (gameMode == GAME_MODE_TIME_ATTACK) {
-            // 타임 어택을 위한 추가적인 함수 필요
 
-            /*
-                제한 시간 설정 => 고정적으로
-            */
-        }
-
-        // map을 랜덤히 뽑는 알고리즘 필요 <- 토요일까지 구현
-
-        const char* maps[MAP_CNT] = {Animals, CountriesNLanguages, Jobs};
-        int mapIdx = rand() % MAP_CNT;
-        mapIdx = 2; // 임시로 작성
-        const char* dir = maps[mapIdx];
+        selectMap(mapDirs, &mapDir);
 
         // load
-        loadMap(map, sheet, dir);
-        loadDescription(description, dir);
-        loadAnswers(answers, dir);
+        loadMap(map, sheet, mapDir);
+        loadDescription(description, mapDir);
+        loadAnswers(answers, mapDir);
 
         // initialize
         initializeDirections(directions);
         initializeSheet(map, sheet);
+        initializeScoreTimeRecord(&scoreTimeRecord);
 
         // update
-        update(map, sheet, description, answers, inputWords, directions, hintUsedLines, gameMode);
+        update(map, sheet, description, answers, inputWords, directions, hintUsedLines, gameMode, scoreTimeRecord);
     }
-    
+
     return 0;
 }

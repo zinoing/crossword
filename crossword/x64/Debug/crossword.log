@@ -1,9 +1,11 @@
 ﻿  crossword.c
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(102,14): warning C4090: 'function': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(130,14): warning C4090: 'function': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(116,13): warning C4090: '=': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(125,14): warning C4090: 'function': different 'const' qualifiers
 C:\Users\zino\Desktop\crossword\crossword\crossword.c(153,14): warning C4090: 'function': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(253,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(350,25): warning C4013: 'time' undefined; assuming extern returning int
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(352,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(558,83): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(176,14): warning C4090: 'function': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(297,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(394,25): warning C4013: 'time' undefined; assuming extern returning int
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(396,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(663,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(753,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
   crossword.vcxproj -> C:\Users\zino\Desktop\crossword\x64\Debug\crossword.exe
