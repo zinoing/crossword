@@ -13,7 +13,7 @@
 #define EXIT 0
 #define GAME_MODE_NORMAL 1
 #define GAME_MODE_TIME_ATTACK 2
-#define MAX_TIME_LIMIT 180
+#define MAX_TIME_LIMIT 5
 
 #define MAX_MAP_HEIGHT 31
 #define MAX_LINE_WIDTH 62
@@ -35,6 +35,11 @@ typedef struct ScoreTimeRecord {
     int time;
     int score;
 } ScoreTimeRecord;
+
+typedef struct GameThreadData {
+    ScoreTimeRecord* scoreTimeRecord;
+    bool* runGame;
+} GameThreadData;
 
 void gotoxy(int x, int y) {
     COORD pos = { x, y };
@@ -68,11 +73,36 @@ void showIntro(int* gameMode) {
     while (1) {
         system("cls"); // clear display
 
-        printf("crossword game\n"
-            "press 1 to play normal crossword game\n"
-            "press 2 to play time attack crossword game\n"
-            "press 0 to exit game\n");
+        int screenWidth = 200;
 
+        const char* text1 = "crossword game";
+        const char* text2 = "press 1 to play normal crossword game";
+        const char* text3 = "press 2 to play time attack crossword game";
+        const char* text4 = "press 0 to exit game";
+
+        int len1 = strlen(text1);
+        int len2 = strlen(text2);
+        int len3 = strlen(text3);
+        int len4 = strlen(text4);
+
+        int x1 = (screenWidth - len1) / 2;
+        int x2 = (screenWidth - len2) / 2;
+        int x3 = (screenWidth - len3) / 2;
+        int x4 = (screenWidth - len4) / 2;
+
+        gotoxy(x1, 24);
+        printf("%s", text1);
+
+        gotoxy(x2, 25);
+        printf("%s", text2);
+
+        gotoxy(x3, 26);
+        printf("%s", text3);
+
+        gotoxy(x4, 27);
+        printf("%s", text4);
+
+        gotoxy(screenWidth / 2, 28);
         int input;
         scanf("%d", &input);
 
@@ -280,7 +310,14 @@ void displayScore(int score) {
 void displayMessage(const char* message) {
     gotoxy(0, 43);
     printf("                                                                                      \r");
-    //gotoxy(0, 43);
+    printf("%s\n", message);
+    Sleep(1000);
+    return;
+}
+
+void displayMessageOnCustomPos(const char* message, int y, int x) {
+    gotoxy(y, x);
+    printf("                                                                                      \r");
     printf("%s\n", message);
     Sleep(1000);
     return;
@@ -578,9 +615,13 @@ bool checkCorrect(char answers[NUM_OF_WORDS + 1][15], char inputWords[NUM_OF_WOR
     return true;
 }
 
-unsigned __stdcall timerThread(ScoreTimeRecord* scoreTimeRecord) {
+unsigned __stdcall timerThread(GameThreadData* gameThreadData) {
+
+    ScoreTimeRecord* scoreTimeRecord = gameThreadData->scoreTimeRecord;
+    bool* runGame = gameThreadData->runGame;
 
     while (scoreTimeRecord->time > 0) {
+
         Sleep(1000);  // 1초 대기
         scoreTimeRecord->time--;  // 1초 감소
 
@@ -591,6 +632,8 @@ unsigned __stdcall timerThread(ScoreTimeRecord* scoreTimeRecord) {
         gotoxy(0, 44); // 이전 커서 위치로 되돌림
     }
 
+    // 타이머가 0이 될 시 게임 중단
+    *runGame = false;
     return 0;
 }
 
@@ -604,19 +647,25 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             int gameMode,
             ScoreTimeRecord scoreTimeRecord) {
 
+    bool runGame = true;
+
     if (gameMode == GAME_MODE_TIME_ATTACK) {
+
+        GameThreadData gameThreadData;
+        gameThreadData.runGame = &runGame;
+        gameThreadData.scoreTimeRecord = &scoreTimeRecord;
 
         uintptr_t threadHandle = _beginthreadex(
             NULL,
             0,
             timerThread,
-            &scoreTimeRecord,
+            &gameThreadData,
             0,
             NULL
         );
     }
 
-    while (1) {
+    while (runGame) {
         system("cls"); // clear display
 
         // display
@@ -701,7 +750,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
                     "5초 뒤에 로비로 돌아가게 됩니다.");
                 Sleep(5000);
-                return;
+                break;
             };
 
             Sleep(1000); // delay
@@ -734,7 +783,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                         Sleep(1000);
                     }
                     else {
-                        if (strcmp(answers[lineNum], inputStr) == 0) {
+                        if (strcmp(answers[lineNum], toUpperCase(inputStr)) == 0) {
                             displayMessage("단어를 맞추셨습니다. 점수 20점 획득");
                             scoreTimeRecord.score += 20;
                             writeWordOnSheet(map, sheet, inputWords, directions, lineNum, toUpperCase(inputStr));
@@ -791,7 +840,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
                                "5초 뒤에 로비로 돌아가게 됩니다.");
                 Sleep(5000);
-                return;
+                break;
             }
 
             // 저장 기능 추가 필요
@@ -799,6 +848,10 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             Sleep(1000); // delay
         }
     }
+
+    system("cls"); // clear display
+    displayMessageOnCustomPos("game ended", 0, 0);
+    return;
 }
 
 int main() {
@@ -830,7 +883,6 @@ int main() {
         ScoreTimeRecord scoreTimeRecord;
 
         showIntro(&gameMode);
-
         selectMap(mapDirs, &mapDir);
 
         // load
