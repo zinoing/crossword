@@ -13,7 +13,7 @@
 #define EXIT 0
 #define GAME_MODE_NORMAL 1
 #define GAME_MODE_TIME_ATTACK 2
-#define MAX_TIME_LIMIT 5
+#define MAX_TIME_LIMIT 30
 
 #define MAX_MAP_HEIGHT 31
 #define MAX_LINE_WIDTH 62
@@ -98,6 +98,8 @@ void showIntro(int* gameMode) {
 
         gotoxy(x3, 26);
         printf("%s", text3);
+
+        Sleep(100);
 
         gotoxy(x4, 27);
         printf("%s", text4);
@@ -769,6 +771,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 char inputStr[100] = { 0 };
                 displayMessage("입력하고자 하는 라인의 번호를 누르세요.");
                 lineNum = getInputNumber();
+
                 if (lineNum < 1 || lineNum  > NUM_OF_WORDS) {
                     displayMessage("1에서 16중의 숫자 중에 하나를 고르세요");
                     Sleep(2000);
@@ -833,6 +836,13 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             default:
                 displayMessage("보기에 선택된 번호만을 골라주세요.");
                 Sleep(1000);
+                break;
+            }
+
+            if (scoreTimeRecord.time == 0) {
+                displayMessage("시간이 종료되었습니다.\n"
+                               "5초 뒤에 로비로 돌아가게 됩니다.");
+                Sleep(5000);
                 break;
             }
 
