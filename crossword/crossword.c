@@ -13,7 +13,7 @@
 #define EXIT 0
 #define GAME_MODE_NORMAL 1
 #define GAME_MODE_TIME_ATTACK 2
-#define MAX_TIME_LIMIT 30
+#define MAX_TIME_LIMIT 15
 
 #define MAX_MAP_HEIGHT 31
 #define MAX_LINE_WIDTH 62
@@ -23,13 +23,12 @@
 #define ACROSS 0
 #define DOWN 1
 
-#define MAP_CNT 4
+#define MAP_CNT 3
 #define MAX_DIR_LENGTH 100
 
-#define Animals "..\\crosswords\\Animals\\"
-#define CountriesNLanguages "..\\crosswords\\Countries&Languages\\"
-#define Jobs "..\\crosswords\\Jobs\\"
-#define Capitals "..\\crosswords\\Capitals\\"
+#define Animals "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Animals\\"
+#define CountriesNLanguages "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Countries&Languages\\"
+#define Capitals "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Capitals\\"
 
 typedef struct ScoreTimeRecord {
     int time;
@@ -72,7 +71,6 @@ void sendAltEnter() {
 void showIntro(int* gameMode) {
     while (1) {
         system("cls"); // clear display
-
         int screenWidth = 200;
 
         const char* text1 = "crossword game";
@@ -115,6 +113,12 @@ void showIntro(int* gameMode) {
         else if (input == EXIT) {
             exit(-1);
         }
+        else {
+            gotoxy(screenWidth / 2 - 17, 28);
+            printf("보기에 선택된 번호만을 골라주세요.");
+            Sleep(2000);
+            continue;
+        }
     }
 }
 
@@ -144,14 +148,13 @@ void initializeScoreTimeRecord(ScoreTimeRecord* scoreTimeRecord) {
 // select map
 void selectMap(const char* mapDirs[], char* mapDir[]) {
     int mapIdx = rand() % MAP_CNT;
-    mapIdx = 3; // 임시로 작성
     *mapDir = mapDirs[mapIdx];
     return;
 }
 
 // load funtcions
 void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH][MAX_LINE_WIDTH], const char* mapDir) {
-    FILE* fs;
+    FILE* fs = NULL;
 
     const char fullPath[MAX_DIR_LENGTH];
     snprintf(fullPath, sizeof(fullPath), "%smap.txt", mapDir);
@@ -179,7 +182,7 @@ void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH
 
 void loadDescription(char description[MAX_DESCRIPTION_LENGTH], const char* mapDir) {
 
-    FILE* fs;
+    FILE* fs = NULL;
 
     const char fullPath[MAX_DIR_LENGTH];
     snprintf(fullPath, sizeof(fullPath), "%sdescription_eng.txt", mapDir);
@@ -202,7 +205,7 @@ void loadDescription(char description[MAX_DESCRIPTION_LENGTH], const char* mapDi
 }
 
 void loadAnswers(char answers[NUM_OF_WORDS + 1][15], char* mapDir) {
-    FILE* fs;
+    FILE* fs = NULL;
 
     const char fullPath[MAX_DIR_LENGTH];
     snprintf(fullPath, sizeof(fullPath), "%sanswer.txt", mapDir);
@@ -288,17 +291,20 @@ void displayDescription(char description[MAX_DESCRIPTION_LENGTH]) {
 void displayMenu() {
     // 메뉴 출력
     gotoxy(0, 33);
-    printf("---- Menu ----\n\n"
+    printf("---- Menu ----\n"
         "1. 단어 입력\n"
         "2. 단어 삭제\n"
         "3. 전체 삭제\n"
         "4. 맵 보기\n"
-        "5. 힌트 보기\n\n"
+        "5. 힌트 보기\n"
+        "0. 인트로로 돌아가기\n"
         "--------------");
 }
 
 void displayTime(int time) {
     // 시간 출력
+    gotoxy(90, 0);
+    printf("               ");
     gotoxy(90, 0);
     printf("time left: %d", time);
 }
@@ -622,7 +628,7 @@ unsigned __stdcall timerThread(GameThreadData* gameThreadData) {
     ScoreTimeRecord* scoreTimeRecord = gameThreadData->scoreTimeRecord;
     bool* runGame = gameThreadData->runGame;
 
-    while (scoreTimeRecord->time > 0) {
+    while (scoreTimeRecord->time > 0 && *runGame) {
 
         Sleep(1000);  // 1초 대기
         scoreTimeRecord->time--;  // 1초 감소
@@ -675,6 +681,13 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
         displayDescription(description);
         displayMenu();
 
+        if (checkCorrect(answers, inputWords)) {
+            displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
+                "5초 뒤에 로비로 돌아가게 됩니다.");
+            Sleep(5000);
+            break;
+        };
+
         if (gameMode == GAME_MODE_NORMAL) {
             // get input
             displayMessage("메뉴 중 하나를 선택하세요.");
@@ -682,6 +695,9 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             int toggle = 1; // 상태 토글용 변수
 
             switch (selectedOption) {
+            case 0:
+                runGame = false;
+                break;
             case 1:
                 displayMessage("1번 선택됨: 단어 입력");
                 int lineNum = 0;
@@ -690,7 +706,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 lineNum = getInputNumber();
                 if (lineNum < 1 || lineNum  > NUM_OF_WORDS) {
                     displayMessage("1에서 16중의 숫자 중에 하나를 고르세요");
-                    Sleep(2000);
+                    Sleep(1000);
                 }
                 else {
                     displayMessage("입력하고자 하는 라인의 단어를 누르세요.");
@@ -736,7 +752,7 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 lineNum = hintNum;
                 if (lineNum < 1 || lineNum > NUM_OF_WORDS) {
                     printf("1에서 16중의 숫자 중에 하나를 고르세요.");
-                    Sleep(2000);
+                    Sleep(1000);
                 }
                 else {
                     writeHintOnSheet(map, sheet, answers, directions, hintUsedLines, lineNum);
@@ -748,13 +764,6 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 break;
             }
 
-            if (checkCorrect(answers, inputWords)) {
-                displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
-                    "5초 뒤에 로비로 돌아가게 됩니다.");
-                Sleep(5000);
-                break;
-            };
-
             Sleep(1000); // delay
         }
 
@@ -765,6 +774,9 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
             int toggle = 1; // 상태 토글용 변수
 
             switch (selectedOption) {
+            case 0:
+                runGame = false;
+                break;
             case 1:
                 displayMessage("1번 선택됨: 단어 입력");
                 int lineNum = 0;
@@ -846,13 +858,6 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
                 break;
             }
 
-            if (checkCorrect(answers, inputWords)) {
-                displayMessage("축하합니다 모든 단어를 다 맞추셨습니다.\n"
-                               "5초 뒤에 로비로 돌아가게 됩니다.");
-                Sleep(5000);
-                break;
-            }
-
             // 저장 기능 추가 필요
 
             Sleep(1000); // delay
@@ -865,6 +870,8 @@ void update(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH],
 }
 
 int main() {
+    srand(time(NULL));
+
     // 전체화면 키우기
     sendAltEnter();
 
@@ -872,7 +879,7 @@ int main() {
         // variables
         int gameMode = 0;
 
-        const char* mapDirs[MAP_CNT] = { Animals, CountriesNLanguages, Jobs, Capitals }; // 맵 경로들
+        const char* mapDirs[MAP_CNT] = { Animals, CountriesNLanguages, Capitals }; // 맵 경로들
         char* mapDir = NULL;
 
         char map[MAX_LINE_WIDTH][MAX_LINE_WIDTH]; // 오리지널 맵, 수정 불가
