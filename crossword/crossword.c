@@ -24,11 +24,11 @@
 #define DOWN 1
 
 #define MAP_CNT 3
-#define MAX_DIR_LENGTH 100
+#define MAX_DIR_LENGTH 100  
 
-#define Animals "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Animals\\"
-#define CountriesNLanguages "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Countries&Languages\\"
-#define Capitals "C:\\Users\\zino\\Desktop\\crossword\\crosswords\\Capitals\\"
+#define Animals "..\\..\\crosswordsData\\Animals\\"
+#define CountriesNLanguages "..\\..\\crosswordsData\\Countries&Languages\\"
+#define Capitals "..\\..\\crosswordsData\\Capitals\\"
 
 typedef struct ScoreTimeRecord {
     int time;
@@ -157,6 +157,7 @@ void loadMap(char map[MAX_MAP_HEIGHT][MAX_LINE_WIDTH], char sheet[MAX_LINE_WIDTH
     FILE* fs = NULL;
 
     const char fullPath[MAX_DIR_LENGTH];
+
     snprintf(fullPath, sizeof(fullPath), "%smap.txt", mapDir);
     fs = fopen(fullPath, "r");
 

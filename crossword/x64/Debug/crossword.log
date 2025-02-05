@@ -4,12 +4,12 @@ C:\Users\zino\Desktop\crossword\crossword\crossword.c(82,20): warning C4267: 'in
 C:\Users\zino\Desktop\crossword\crossword\crossword.c(83,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 C:\Users\zino\Desktop\crossword\crossword\crossword.c(84,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 C:\Users\zino\Desktop\crossword\crossword\crossword.c(151,13): warning C4090: '=': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(160,14): warning C4090: 'function': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(188,14): warning C4090: 'function': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(211,14): warning C4090: 'function': different 'const' qualifiers
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(342,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(439,25): warning C4013: 'time' undefined; assuming extern returning int
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(441,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(730,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\zino\Desktop\crossword\crossword\crossword.c(817,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(161,14): warning C4090: 'function': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(189,14): warning C4090: 'function': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(212,14): warning C4090: 'function': different 'const' qualifiers
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(343,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(440,25): warning C4013: 'time' undefined; assuming extern returning int
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(442,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(731,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\zino\Desktop\crossword\crossword\crossword.c(818,87): warning C4267: 'function': conversion from 'size_t' to 'int', possible loss of data
   crossword.vcxproj -> C:\Users\zino\Desktop\crossword\x64\Debug\crossword.exe
